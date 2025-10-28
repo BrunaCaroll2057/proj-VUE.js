@@ -1,5 +1,8 @@
 <template>
   <div class="calendar">
+    <button @click="previousMonth">Anterior</button>
+    <button @click="nextMonth">Próximo</button>
+
     <h2>{{ currentMonthName }} - {{ currentYear }}</h2>
 
     <div class="calendar-grid">
@@ -46,7 +49,7 @@ export default {
       currentYear: new Date().getFullYear(),
       currentMonthIndex: new Date().getMonth(), // 0-11
       currentMonthName: new Date().toLocaleString('default', { month: 'long' }),
-      daysOfWeek: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
+      daysOfWeek: ['Dom ', ' Seg ', ' Ter ', ' Qua ', ' Qui ', ' Sex ', ' Sáb'],
       daysInMonth: [], // inicializa vazio, vai preencher no created()
       selectedDay: null,
       newEvent: '',
@@ -54,29 +57,35 @@ export default {
   },
   created() {
     // Preenche os dias depois que a instância existe
-    this.daysInMonth = this.getDaysInMonth();
+    this.updateMonthData();
   },
   methods: {
-    getDaysInMonth() {
-      const days = [];
-      const year = this.currentYear;
-      const month = this.currentMonthIndex; // 0-based
-      const firstDayDate = new Date(year, month, 1);
-      const firstDay = firstDayDate.getDay(); // 0 (Dom) - 6 (Sáb)
-      const lastDate = new Date(year, month + 1, 0).getDate(); // último dia do mês
+  getDaysInMonth() {
+    const days = [];
+    const year = this.currentYear;
+    const month = this.currentMonthIndex;
+    const firstDayDate = new Date(year, month, 1);
+    const firstDay = firstDayDate.getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    const totalCells = 42; // 6 semanas x 7 dias
 
-      // placeholders para alinhar o primeiro dia
-      for (let i = 0; i < firstDay; i++) {
-        days.push({ date: null, events: [] });
-      }
+    // Placeholders no início
+    for (let i = 0; i < firstDay; i++) {
+      days.push({ date: null, events: [] });
+    }
 
-      // dias do mês
-      for (let d = 1; d <= lastDate; d++) {
-        days.push({ date: d, events: [] });
-      }
+    // Dias do mês
+    for (let d = 1; d <= lastDate; d++) {
+      days.push({ date: d, events: [] });
+    }
 
-      return days;
-    },
+    // Placeholders no final para completar 42 células
+    while (days.length < totalCells) {
+      days.push({ date: null, events: [] });
+    }
+
+    return days;
+  },
     editEvent(day) {
       // não abre modal para células vazias (placeholders)
       if (!day || !day.date) return;
@@ -101,6 +110,28 @@ export default {
       this.selectedDay = null;
       this.newEvent = '';
     },
+    previousMonth() {
+      if (this.currentMonthIndex === 0) {
+        this.currentMonthIndex = 11;
+        this.currentYear--;
+      } else {
+        this.currentMonthIndex--;
+      }
+      this.updateMonthData();
+    },
+    nextMonth() {
+      if (this.currentMonthIndex === 11) {
+        this.currentMonthIndex = 0;
+        this.currentYear++;
+      } else {
+        this.currentMonthIndex++;
+      }
+      this.updateMonthData();
+    },
+    updateMonthData() {
+      this.currentMonthName = new Date(this.currentYear, this.currentMonthIndex).toLocaleString('default', { month: 'long' });
+      this.daysInMonth = this.getDaysInMonth();
+    },
   },
 };
 </script>
@@ -113,17 +144,16 @@ export default {
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 0;
+  grid-template-rows: auto repeat(6, 1fr); /* 1 linha para header + 6 para dias */
 }
-
 .calendar-header {
+  grid-row: 1;
+}
+.calendar-days {
+  grid-row: 2 / -1; /* ocupa as linhas restantes */
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  font-weight: bold;
-}
-
-.calendar-days {
-  display: contents; /* para manter grid de 7 colunas por linha */
+  grid-template-rows: repeat(6, 1fr);
 }
 
 .calendar-day {
